@@ -1,0 +1,141 @@
+﻿安装
+	1.前往http://mirror.bit.edu.cn/apache/pig/下载相应的pig版本，然后解压：
+	tar -zvxf pig-0.16.0-tar.gz  
+	
+	2.解压完之后设置环境变量：
+	vim /etc/profile  
+	export PIG_HOME=/lighttrace/pig-0.13.0   (替换成你的目录)  
+	export PATH=$PATH:$PIG_HOME/bin:$PIG_HOME/conf  
+	export PIG_CLASSPATH=$HADOOP_HOME/etc/hadoop
+
+	3.source /etc/profile 使其立马生效
+
+	4.然后验证
+	pig --help
+
+工具及文件系统操作另外Pig提供了一些使用工具用于和文件系统和MapReduce作业进行交互：
+	Hadoop文件系统：
+	cat： 查看一个或多个文件的内容
+	cd： 改变当前目录
+	copyFromLocal： 拷贝本地文件到Hadoop文件系统
+	copyToLocal：从Hadoop文件系统拷贝到本地
+	cp： 复制
+	fs： 访问Hadoop的文件系统脚本hadoop fs
+	ls： 列出文件
+	mkdir： 创建目录
+	mv： 移动文件或目录
+	pwd：当前路径
+	rm： 删除文件或目录
+	rmf： 强制删除文件或目录
+
+	Hadoop MapReduce：
+	kill: 杀掉一个MapReduce作业
+
+	实用工具：
+	clear：清除Grunt的屏幕
+	exec：在一个新的grunt中运行脚本
+	help： 帮助命令
+	history：查看当前grunt session的历史命令
+	quint（\q）：退出解释器
+	run： 在当前的grunt shell中运行脚本
+	set：设置Pig参数或MapReduce作业的属性
+	sh：在grunt中运行shell命令
+
+执行计划
+	Pig脚本的物理计划时一系列的MapReduce作业，在local模式下，在一个JVM中执行，在MapReduce模式下，在Hadoop集群上执行。可以通过EXPLAIN命令来查看逻辑计划和物理计划：
+	explain maxTemps;
+
+	载入和存储：
+	LOAD：从文件系统或者其他存储载入数据到一个relation
+	STORE：保存relation到文件系统或者其他存储
+	DUMP(\d): 输出一个relation到控制台
+
+	过滤：
+	FILTER： 从relation中移除不想要的行
+	DISTINCT： 从relation中移除重复的行
+	FOREACH … GENERATE：从relation中移除或者新增字段
+	MAPREDUCE：使用relation作为输入运行一个MapReduce作业
+	STREAM：使用外部程序（如Python）转换relation
+	SAMPLE：从relation中采样
+	ASSERT：确保relation满足特定条件，否则失败。
+
+	分组与关联：
+	JOIN： 关联2个或者多个relation
+	COGROUP： 对2个或多个relation的数据进行分组操作
+	GROUP： 对一个单一的relation分组
+	CROSS：对2个或多个relation求叉积
+	CUBE：对relation中某些列的组合进行聚合
+
+	排序：
+	ORDER：使用relation中的一个或多个字段排序
+	RANK： 给relation中的每个元组赋一个rank值
+	LIMIT： 限制relation的元组数量
+
+	组合和分隔：
+	UNION：组合2个或多个relation
+	SPLIT：将一个relation分隔为2个或多个
+
+	Pig中有2类语句不会加入到执行计划中。例如DESCRIBE，EXPLAIN，ILLUSTRATE之类的调试语句，DUMP也是调试语句，在数据集较小的时候打印到控制台或者结合LIMIT对数据进行限制。Pig Latin的调试操作（disgnoostic operator）如下，括号中为快捷方式：
+	DESCRIBE(\de) : 打印relation的模式
+	EXPLAIN（\e）：输出逻辑和物理计划
+	ILLUSTRATE(\i)：展示逻辑计划在样本数据的执行情况
+
+	Pig提供了3个语句用于整合宏或者自定义函数到Pig脚本中：
+	REGISTER：向Pig运行时注册一个JAR包
+	DEFINE：为micro，UDF或者流式脚本创建一个别名
+	IMPORT：导入外部文件中定义的宏到Pig脚本
+
+	因为这些操作不是基于relation的，所以不会加入到逻辑计划中，而是立即执行。
+
+pig的数据模型，和传统数据的模型简单对比：
+	Pig	数据库
+	Bag	表
+	Tuple	行
+	Field	属性
+	注意：pig同一个bag里边的各个tuple可以由不同数量不同类型的field，和传统数据库是不一样的。
+
+简单实例
+	有一个文件ip_log.txt是某网站访问日志，使用pig计算出每个ip的点击次数,文件内容如下：
+	119.146.220.12 - - [31/Jan/2012:23:59:48 +0800] “GET /popwin_js.php?fid=53 HTTP/1.1” 404 289 “http://f.dataguru.cn/forum.php?mod=forumdisplay&fid=53&page=1” “Mozilla/5.0 (Windows NT 5.1; rv:8.0.1) Gecko/20100101 Firefox/8.0.1” 
+	119.146.220.12 - - [31/Jan/2012:23:59:49 +0800] “GET /static/js/seditor.js?AZH HTTP/1 .1” 304 - “http://f.dataguru.cn/forum.php?mod=forumdisplay&fid=53&page=1” “Mozilla/5. 0 (Windows NT 5.1; rv:8.0.1) Gecko/20100101 Firefox/8.0.1” 
+	119.146.220.12 - - [31/Jan/2012:23:59:49 +0800] “GET /home.php?mod=spacecp&ac=pm&op=c hecknewpm&rand=1328025588 HTTP/1.1” 200 - “http://f.dataguru.cn/forum.php?mod=forumdi splay&fid=53&page=1” “Mozilla/5.0 (Windows NT 5.1; rv:8.0.1) Gecko/20100101 Firefox/8 .0.1” 
+	107.146.250.12 - - [31/Jan/2012:23:59:55 +0800] “GET /static/js/smilies.js?AZH HTTP/1.1” 304 - “http://f.dataguru.cn/forum.php?mod=forumdisplay&fid=53&page=1” “Mozilla/5. 0 (Windows NT 5.1; rv:8.0.1) Gecko/20100101 Firefox/8.0.1” 
+	119.146.220.12 - - [31/Jan/2012:23:59:48 +0800] “GET /data/cache/style_2_common.css?A ZH HTTP/1.1” 304 - “http://f.dataguru.cn/forum.php?mod=forumdisplay&fid=53&page=1” “M ozilla/5.0 (Windows NT 5.1; rv:8.0.1) Gecko/20100101 Firefox/8.0.1” 
+	119.146.220.12 - - [31/Jan/2012:23:59:51 +0800] “GET /static/js/jquery-1.6.js HTTP/1.1” 404 299 “http://f.dataguru.cn/forum.php?mod=forumdisplay&fid=53&page=1” “Mozilla/5 .0 (Windows NT 5.1; rv:8.0.1) Gecko/20100101 Firefox/8.0.1” 
+	108.146.220.12 - - [31/Jan/2012:23:59:55 +0800] “GET /static/js/smilies.js?AZH HTTP/1.1” 304 - “http://f.dataguru.cn/forum.php?mod=forumdisplay&fid=53&page=1” “Mozilla/5. 0 (Windows NT 5.1; rv:8.0.1) Gecko/20100101 Firefox/8.0.1” 
+	119.146.220.12 - - [31/Jan/2012:23:59:52 +0800] “GET /static/js/floating-jf.js HTTP/1.1” 404 300 “http://f.dataguru.cn/forum.php?mod=forumdisplay&fid=53&page=1” “Mozilla/ 5.0 (Windows NT 5.1; rv:8.0.1) Gecko/20100101 Firefox/8.0.1” 
+	119.146.220.12 - - [31/Jan/2012:23:59:55 +0800] “GET /popwin_js.php?fid=53 HTTP/1.1”404 289 “http://f.dataguru.cn/forum.php?mod=forumdisplay&fid=53&page=1” “Mozilla/5.0 (Windows NT 5.1; rv:8.0.1) Gecko/20100101 Firefox/8.0.1” 
+	119.146.220.12 - - [31/Jan/2012:23:59:55 +0800] “GET /static/js/smilies.js?AZH HTTP/1.1” 304 - “http://f.dataguru.cn/forum.php?mod=forumdisplay&fid=53&page=1” “Mozilla/5. 0 (Windows NT 5.1; rv:8.0.1) Gecko/20100101 Firefox/8.0.1” 
+	108.146.220.12 - - [31/Jan/2012:23:59:55 +0800] “GET /static/js/smilies.js?AZH HTTP/1.1” 304 - “http://f.dataguru.cn/forum.php?mod=forumdisplay&fid=53&page=1” “Mozilla/5. 0 (Windows NT 5.1; rv:8.0.1) Gecko/20100101 Firefox/8.0.1”
+
+	复制该文件记得将一条记录方成完整的一行，不然会统计多余的数据，虽然不影响结果 
+
+	1.首先将该文件上传到hdfs里面
+	hadoop fs -put ip_log.txt /user/hadoop/pig
+
+	2.查看文件是否上传成功
+	hadoop fs -ls /user/hadoop/pig
+	
+	3.开启historyserver
+	mr-jobhistory-daemon.sh start historyserver
+
+	4.grunt模式运行命令：
+	pig
+	// 加载HDFS中访问日志，使用空格进行分割，只加载ip列
+	records = LOAD '/user/hadoop/pig/ip_log.txt' USING PigStorage(' ') AS (ip:chararray);
+		// 过滤
+		filterred_records = FILTER records BY ip<>'107.146.250.12';
+	// 按照ip进行分组，统计每个ip点击数
+	records_b = GROUP records BY ip;
+	records_c = FOREACH records_b GENERATE group,COUNT(records) AS click;
+	// 按照点击数排序，保留点击数前3个的ip数据
+	records_d = ORDER records_c by click DESC;
+	top10 = LIMIT records_d 3;
+	// 把生成的数据保存到HDFS的class7目录中
+	STORE top10 INTO '/user/hadoop/pig/out';
+
+	查看运行后的结果：
+	hadoop fs -ls /user/hadoop/pig/out
+	hadoop fs -cat /user/hadoop/pig/out/part-r-00000
+
+	

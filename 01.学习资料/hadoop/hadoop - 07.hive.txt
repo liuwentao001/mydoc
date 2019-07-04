@@ -1,0 +1,84 @@
+﻿解压
+	tar -zxvf apache-hive-3.1.1-bin.tar.gz -C /home/hadoop
+	ln -s /home/hadoop/apache-hive-3.1.1-bin/ /home/hadoop/hive
+
+修改配置/etc/profile
+	export HIVE_HOME=/home/hadoop/hive
+	export PATH=$PATH:$HIVE_HOME/bin
+	执行：source /etc/profile
+
+配置hive-site.xml
+	复制文件	cp hive-default.xml.template hive-site.xml
+	修改内容
+    <property>
+        <name>javax.jdo.option.ConnectionUserName</name>用户名（这4是新添加的，记住删除配置文件原有的哦！）
+        <value>root</value>
+    </property>
+    <property>
+        <name>javax.jdo.option.ConnectionPassword</name>密码
+        <value>123</value>
+    </property>
+   <property>
+        <name>javax.jdo.option.ConnectionURL</name>mysql
+        <value>jdbc:mysql://192.168.1.129:3306/hive?useSSL=false</value>
+    </property>
+    <property>
+        <name>javax.jdo.option.ConnectionDriverName</name>mysql驱动程序
+        <value>com.mysql.jdbc.Driver</value>
+    </property>
+	<property>
+	  <name>hive.exec.local.scratchdir</name>
+	    <value>$HIVE_HOME/iotmp</value>
+	    <description>Local scratch space for Hive jobs</description>
+	</property>
+	<property>
+	   <name>hive.querylog.location</name>
+	    <value>$HIVE_HOME/iotmp</value>
+	    <description>Location of Hive run time structured log file</description>
+	 </property>
+	 <property>
+	   <name>hive.downloaded.resources.dir</name>
+	    <value>$HIVE_HOME/iotmp</value>
+	    <description>Temporary local directory for added resources in the remote file system.</description>
+	 </property>
+
+  <property>
+    <name>hive.metastore.warehouse.dir</name>
+    <value>/user/hive/warehouse</value>
+    <description>HDFS数据目录 location of default database for the warehouse </description>
+  </property>
+  <property>
+    <name>hive.exec.scratchdir</name>
+    <value>/tmp/hive</value>
+    <description>HDFS临时目录HDFS root scratch dir for Hive jobs which gets created with write all (733) permission. For each connecting user, an HDFS scratch dir: ${hive.exec.scratchdir}/&lt;username&gt; is created, with ${hive.scratch.dir.permission}.</description>
+  </property>
+  <property>
+
+设置权限
+	chown -R hadoop:hadoop /home/hadoop/hive
+
+将驱动添加到sqoop/lib中
+	mysql-connector-java-5.1.44-bin.jar
+
+资源库初始化
+	/home/hadoop/hive/bin/schematool -dbType mysql -initSchema
+
+
+	create database hive_1;
+	use hive_1;
+	create table hive_01 (id int,name string);
+	show tables;
+
+	CREATE TABLE IF NOT EXISTS employee ( eid int, name String,salary String, destination String) COMMENT 'Employee details' ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t' LINES TERMINATED BY '\n' STORED AS TEXTFILE;
+	在/home/hadoop 目录中名为sample.txt的文件。
+		1201	Gopal	45000	Technical manager
+		1202	Manisha	45000	Proof reader
+		1203	Masthanvali	40000	Technical writer
+		1204	Kiran	40000	Hr Admin
+		1205	Kranthi	30000	Op Admin
+	LOAD DATA LOCAL INPATH '/home/hadoop/sample.txt' OVERWRITE INTO TABLE employee;
+
+
+
+启动web服务
+	hive --service hiveserver2 &

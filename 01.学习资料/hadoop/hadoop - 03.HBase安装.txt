@@ -1,0 +1,120 @@
+﻿单机模式安装
+	解压
+	tar -zxvf hbase-2.1.4-bin.tar.gz -C /home/hadoop
+	ln -s /home/hadoop/hbase-2.1.4/ /home/hadoop/hbase
+
+	修改文件/etc/profile
+	export HBASE_HOME=/home/hadoop/hbase
+	export PATH=$PATH:$HBASE_HOME/bin
+
+	修改文件conf/hbase-env.sh
+	export JAVA_HOME=/usr/local/jdk1.8.0_131
+
+	修改文件conf/hbase-site.xml
+	<configuration>
+		<property>
+		<name>hbase.rootdir</name>
+		<value>file:/home/hadoop/hbase/hfile</value>
+		</property>
+	</configuration>
+
+
+分布式模式安装
+	修改文件conf/hbase-env.sh
+	export JAVA_HOME=/usr/local/jdk1.8.0_131
+	# export HBASE_CLASSPATH=${HADOOP_HOME}/etc/hadoop/
+	export HBASE_MANAGES_ZK=true
+
+
+	修改文件conf/hbase-site.xml
+	<configuration>
+	   <property>
+		   <name>hbase.master</name>
+		   <value>master:6000</value>
+	   </property>
+	   <property>
+		   <name>hbase.master.maxclockskew</name>
+		   <value>180000</value>
+	   </property>
+	   <property>
+		   <name>hbase.rootdir</name>
+		   <value>hdfs://master:9000/hbase</value>
+	   </property>
+
+		   <property>
+			   <name>hbase.tmp.dir</name>
+			   <value>/home/hadoop/hbase/tmp</value>
+		   </property>
+
+	   <property>
+		   <name>hbase.cluster.distributed</name>
+		   <value>true</value>
+	   </property>
+	   <property>
+		   <name>hbase.zookeeper.quorum</name>
+		   <value>master,slave1,slave2</value>
+	   </property>
+
+		   <property>
+			   <name>hbase.zookeeper.property.dataDir</name>
+			   <value>/home/hadoop/hbase/zookeeper</value>
+		   </property>
+
+	   <property>
+		   <name>hbase.zookeeper.property.dataDir</name>
+		   <value>/home/hadoop/zookeeper/tmp</value>
+	   </property>
+	   <property>
+		   <name>dfs.replication</name>
+		   <value>1</value>
+	   </property>
+	</configuration>
+
+	修改文件conf/regionservers
+	slave1
+	slave2
+
+		--master节点上
+		先删除hbase/lib下的jar   rm -rf  hadoop-*.jar
+		在复制hadoop的下的hadoop*.jar到hbase下
+		find /home/hadoop/hadoop/share/hadoop -name "hadoop*jar" | xargs -i cp {} /home/hadoop/hbase/lib/
+
+	将htrace-core-3.1.0-incubating.jar复制到hbase/lib目录下
+
+	scp -r hbase/ slave1:/home/hadoop
+	scp -r hbase/ slave2:/home/hadoop
+测试
+	create 'table_test','cf1';
+	put 'table_test','rowkey1','cf1:a','avalue'
+	put 'table_test','rowkey2','cf1:b','bvalue'
+	put 'table_test','rowkey3','cf1:c','cvalue'
+	scan 'table_test'
+	get 'table_test','rowkey1'
+	create 'user','userid','account','info','address'
+	put 'user','zhangsan','userid:id','001'
+	put 'user','zhangsan','account:name','zhangsan'
+	put 'user','zhangsan','account:password','123456'
+	put 'user','zhangsan','account:idcard','42012319861234561230'
+	put 'user','zhangsan','info:age','29'
+	put 'user','zhangsan','info:sex','男'
+	put 'user','zhangsan','address:province','guangdong'
+	put 'user','zhangsan','address:city','shengzhen'
+	put 'user','lisi','userid:id','002'
+	put 'user','lisi','account:name','lisi'
+	put 'user','lisi','account:password','123451231236'
+	put 'user','lisi','account:idcard','42963319861234561230'
+	put 'user','lisi','info:age','21'
+	put 'user','lisi','info:sex','女'
+	put 'user','lisi','address:province','shanghai'
+	scan 'user'
+	get 'user','zhangsan'
+	get 'user','zhangsan','address'
+	get 'user','zhangsan','address:province'
+	put 'user','zhangsan','info:age' ,'100'
+	get 'user','zhangsan','info:age'
+	delete 'user','zhangsan','address:city'
+	get 'user','zhangsan'
+	deleteall 'user','lisi'
+	scan 'user'
+	count 'user'
+	truncate 'user'

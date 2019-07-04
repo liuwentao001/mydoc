@@ -1,0 +1,282 @@
+一、准备----------------------------------------------------------------------------------------------------------
+1.root修改内核,修改 /etc/sysctl.conf：
+	# Kernel sysctl configuration file for Red Hat Linux
+	#
+	# For binary values, 0 is disabled, 1 is enabled.  See sysctl(8) and
+	# sysctl.conf(5) for more details.
+
+	# Controls IP packet forwarding
+	net.ipv4.ip_forward = 0
+
+	# Controls source route verification
+	net.ipv4.conf.default.rp_filter = 1
+
+	# Do not accept source routing
+	net.ipv4.conf.default.accept_source_route = 0
+
+	# Controls the System Request debugging functionality of the kernel
+	kernel.sysrq = 1
+
+	# Controls whether core dumps will append the PID to the core filename.
+	# Useful for debugging multi-threaded applications.
+	kernel.core_uses_pid = 1
+
+	# Controls the use of TCP syncookies
+	net.ipv4.tcp_syncookies = 1
+
+	# Disable netfilter on bridges.
+	net.bridge.bridge-nf-call-ip6tables = 0
+	net.bridge.bridge-nf-call-iptables = 0
+	net.bridge.bridge-nf-call-arptables = 0
+
+	# Controls the default maxmimum size of a mesage queue
+	kernel.msgmnb = 65536
+
+	# Controls the maximum size of a message, in bytes
+	kernel.msgmax = 65536
+	kernel.msgmni = 2048
+	kernel.sem = 250 512000 100 2048
+
+	# Controls the maximum shared segment size, in bytes
+	# kernel.shmmax = 68719476736
+	kernel.shmmax = 500000000
+	kernel.shmmni = 4096
+
+	# Controls the maximum number of shared memory segments, in pages
+	# kernel.shmall = 4294967296
+	kernel.shmall = 4000000000
+
+	net.ipv4.tcp_tw_recycle=1
+	net.ipv4.tcp_max_syn_backlog=4096
+	net.ipv4.ip_local_port_range = 1025 65535
+	net.core.netdev_max_backlog=10000
+	vm.overcommit_memory=2
+	net.ipv4.conf.all.arp_filter = 1
+	net.core.rmem_max = 2097152
+	net.core.wmem_max = 2097152
+2.修改Linux最大连接数,/etc/security/limits.conf
+	#greenplum configs
+	* soft nofile 65536
+	* hard nofile 65536
+	* soft nproc 131072 
+	* hard nproc 131072
+3.I/O优化,/boot/grub/grub.conf
+	#greenplum configs
+	elevator=deadline
+    /etc/rc.d/rc.local
+	blockdev --setra 65536 /dev/sda 
+4.在host中配置节点信息,/etc/hosts
+	192.168.100.128 mdw
+	192.168.100.129 sdw1
+	192.168.100.130 sdw2
+	修改 （所有节点） /etc/sysconfig/network
+		HOSTNAME=mdw
+		HOSTNAME=sdw1
+		HOSTNAME=sdw2
+5.关闭防火墙
+	service iptables stop
+	ntsysv		--上下键：可以在中间的方框当中，在各个服务之间移动；
+			--空格键：可以用来选择你所需要的服务，[*]表示开起启动；
+			--tab键：可以在方框、OK、Cancel之间移动；
+			--[F1]键：可以显示该服务的说明。
+6.关闭SELINUX,/etc/selinux/config
+	SELINUX=disabled
+
+
+二、Greenplum数据库安装----------------------------------------------------------------------------------------------------------
+1. 创建gpadmin用户,（所有节点）
+	useradd gpadmin
+	passwd gpadmin
+2. 执行安装（所有节点）
+	将数据库安装文件上传到/opt目录下，解压并执行安装
+3.配置gpadmin用户的环境变量（所有节点）
+	.bashrc和.bash_profile，添加下面两行
+		source /usr/local/greenplum-db/greenplum_path.sh 
+		export MASTER_DATA_DIRECTORY=/data/master/gpseg-1
+	/etc/profile也添加这两句话，并注意执行source使之生效。
+		source /etc/profile
+4. 准备节点信息（以下操作均在node01上完成）
+	创建一个目录专门存放节点配置
+		mkdir -p /opt/gpinst/
+	在这个目录里创建一个文件all_host，实际上文件名可以任意。内容是：
+		mdw
+		sdw1
+		sdw2
+	在这个目录里创建一个文件all_segs，实际上文件名可以任意。内容是：
+		sdw1
+		sdw2
+5.建立节点之间的信任
+	就是通过节点配置，在节点之间执行交换key，保证节点之间的访问不需要登录验证过程。若前面已经配置好profile并执行了source，直接进入
+		cd /usr/local/greenplum-db/bin
+	执行
+		gpssh-exkeys -f /opt/gpinst/all_host
+	根据系统提示操作，这里需要输入的是root的密码。
+	执行完成后可以在不同节点上通过ssh访问其他节点，若不需要再输入密码直接登录，则说明操作正确。
+6.执行安装
+	仍然在bin目录下执行：
+		gpseginstall -f /opt/gpinst/all_host -u gpadmin -p gpadmin
+	一路顺利完成部署操作
+8.开始创建目录：
+	Master
+		mkdir -p /data/master
+		chown gpadmin:gpadmin /data/master
+	segment（primary，在每个节点的/data目录下创建，使用gp自带的gpssh工具执行）
+		gpssh -f /opt/gpinst/all_segs -e 'mkdir -p /data1/primary'
+		gpssh -f /opt/gpinst/all_segs -e 'chown gpadmin:gpadmin /data1/primary'
+	mirror（同样在每个节点的/data1目录下创建）
+		gpssh -f /opt/gpinst/all_segs -e 'mkdir -p /data1/mirror'
+		gpssh -f /opt/gpinst/all_segs -e 'chown gpadmin:gpadmin /data1/mirror'
+9.设置时钟同步
+	/etc/ntp.conf,加入一行：
+		server 192.168.100.128
+	每个节点上都进行同样的操作，同时这个server填成统一的，这样所有的机器统一和这个IP的服务器进行时间同步。
+	重启ntpd服务 
+		/etc/init.d/ntpd restart
+	查看ntp同步情况 
+		ntpq -p
+	使ntpd服务重启服务器后也启动 
+		chkconfig --level 0123456 ntpd on
+10.编辑数据库初始文件
+	使用gpadmin创建目录和文件，
+		mkdir /home/gpadmin/gpconfigs
+		cp /usr/local/greenplum-db/docs/cli_help/gpconfigs/gpinitsystem_config /home/gpadmin/gpconfigs/
+		chmod 775 /home/gpadmin/gpconfigs/gpinitsystem_config
+		cp /usr/local/greenplum-db/docs/cli_help/gpconfigs/hostfile_gpinitsystem /home/gpadmin/gpconfigs/
+		chmod 775 /home/gpadmin/gpconfigs/hostfile_gpinitsystem
+	修改这个gpinitsystem_config文件：
+		declare -a DATA_DIRECTORY=(/data1/primary)		-–若在每个节点上的指定目录里只创建一个primary，则这里只写一个位置即可，若超过一个，就会在每个节点上创建多余1个的primary目录。
+		ARRAY_NAME="HX Greenplum DW"      –默认即可
+		SEG_PREFIX=gpseg –默认即可
+		PORT_BASE=40000 –默认即可
+		MASTER_HOSTNAME=mdw
+		MASTER_DIRECTORY=/data/master
+		MASTER_PORT=5432
+		TRUSTED_SHELL=ssh
+		CHECK_POINT_SEGMENTS=8
+		ENCODING=UNICODE
+		MIRROR_PORT_BASE=50000
+		REPLICATION_PORT_BASE=41000
+		MIRROR_REPLICATION_PORT_BASE=51000
+		declare -a MIRROR_DATA_DIRECTORY=(/data1/mirror)		--和primary一样
+		DATABASE_NAME=greenplum-db_test
+		MACHINE_LIST_FILE=/home/gpadmin/gpconfigs/hostfile_gpinitsystem	--注意这个文件需要从cli_help目录中复制过来。
+
+11.执行数据库初始化
+	Gpadmin在bin目录下：
+		su gpadmin
+		gpinitsystem -c /home/gpadmin/gpconfigs/gpinitsystem_config -h /opt/gpinst/all_segs
+	跟进提示，输入一次y，顺利就可以完成数据库部署。
+/*
+12.为master安装standby
+	为node01的master在node02上配置standby，在node02相同的位置创建一个master文件夹。
+	在node02上执行以下操作：
+		mkdir -p /data/master
+		chown gpadmin:gpadmin /data/master
+	在node01上执行以下操作：（注意此时数据库应是启动的）
+		gpinitstandby -s sdw1 
+	按照顺序执行直接完成创建standby操作。
+*/	 
+13.设置访问权限
+	Greenplum数据库作为mpp结构的系统，用户只能通过Master节点对数据进行访问，所以需要修改master中的hba文件，使其能够接受网络中其他终端的访问。
+	/data/gpdata/master/gpseq-1/pg_hba.conf，在最后加上
+		host   all     all    0.0.0.0/0  trust     --根据实际情况修改
+
+
+三、Greenplum数据库的基本使用----------------------------------------------------------------------------------------------------------
+1.启动和停止
+	gpstart
+	gpstop
+
+2.查看数据库状态
+	psql -l
+	pgstate
+ 
+3.命令行连接访问数据库
+	psql -d postgres -h 192.168.100.128 -p 5432 -U gpadmin
+
+四、Master上进行主机OS参数检测：
+		gpssh -f /opt/gpinst/all_host -v date
+		gpcheck -f /opt/gpinst/all_host -m mdw
+		gpssh -f /opt/gpinst/all_host -e 'echo deadline > /sys/block/sr0/queue/scheduler'
+	磁盘I/O和内存带宽：
+		gpcheckperf -f /opt/gpinst/all_host -d /data1/mirror -r ds
+
+
+
+
+四、安装gpperfmon-cc-web监控----------------------------------------------------------------------------------------------------------
+1、首先用gpadmin用户登录：
+	su - gpadmin
+2、在master主机上执行source：
+	source /usr/local/greenplum-db/greenplum_path.sh
+3、使用gpperfmon_install命令，安装后会建立gpperfmon数据库，默认用户gpmon：
+	gpperfmon_install --enable --password gpmon --port 5432
+4、重启数据库：
+	gpstop -r
+5、使用ps命令检查数据收集进程是否运行：
+	ps -ef | grep gpmmon
+6、执行命令检查数据收集进程是否写入命令中心数据库：
+	psql gpperfmon -c 'SELECT * FROM system_now;'
+
+	7、配置standby master主机：
+	1、复制 $MASTER_DATA_DIRECTORY/pg_hba.conf 文件从你的master主机到standby主机：
+		gpscp -h smdw /home/gpamdin/masterdata/gpseg-1/pg_hba.conf =:$MASTER_DATA_DIRECTORY/
+	2、复制 ~/.pgpass 文件从你的master主机到standby主机：
+		gpscp -h smdw ~/.pgpass =:~/
+	注：.pgpass 权限必须要设置成600。
+
+8、配置环境
+	所有节点的权限
+		把 /usr/local/ 的权限设置成gpadmin
+		chown -R gpadmin:gpadmin greenplum-cc-web
+	.bash_profile，添加下面两行
+		GPPERFMONHOME=/usr/local/greenplum-cc-web-4.4.2
+		source $GPPERFMONHOME/gpcc_path.sh
+	/data/gpdata/master/gpseq-1/pg_hba.conf，在最后加上
+		host    gpperfmon       gpmon   ::1/128 md5
+		host    gpperfmon       gpmon   0.0.0.0/0 md5
+9、安装
+gpccinstall
+	Do you agree to the Pivotal Greenplum Command Center End User License Agreement? Yy/Nn (Default=Y)
+	Where would you like to install Greenplum Command Center? (Default=/usr/local)
+	What would you like to name this installation of Greenplum Command Center? (Default=gpcc)
+	What port would you like gpcc webserver to use? (Default=28080)
+	Would you like to enable kerberos? Yy/Nn (Default=N)
+	Would you like enable SSL? Yy/Nn (Default=N)
+10、启动
+gpcc start
+
+
+
+
+----修改系统时区
+	cp /usr/share/zoneinfo/Asia/Harbin /etc/localtime
+----greenplum 节点失败后恢复步骤
+	1. 查看gp_segment_configration  表，判断down掉的节点。
+	2.排除故障后，恢复数据(对于4.2以前的版本建议重启数据库后做数据恢复）
+		gprecoverseg
+	3.观察恢复是否完成
+		gpstate -s | grep Sync  （全部为 Synchronized 表示恢复完成）
+	4.平衡处理节点（如果主节点down了，mirror节点接管后，会造成部分节点负担过重。所以要进行这步操作）
+		gprecoverseg -r（备注 4.0 版本需要执行gpstop -r )
+	5.检查恢复结果
+	查看gp_segment_configurtation表的情况  
+		1. role和preferred_role 全部相等，
+		2.mode 全部为 's',
+		3.status 全为 'u'
+
+五、安装madlib扩展----------------------------------------------------------------------------------------------------------
+
+1、下载扩展包并解压
+	下载扩展包到集群的master服务器(standby 不需要,由于也无法安装)，扩展包的版本需要与greenplum版本保持一致
+	tar -zxvf madlib-1.13-gp5-rhel6-x86_64.tar.gz
+2、安装
+	su gpadmin
+	gppkg -i madlib-1.13-gp5-rhel6-x86_64.gppkg 
+3、增加madlib 函数到指定的数据库
+	----解析参数：-s 指定数据库中的schema  
+             -p 指定要安装的平台，这里是统一的 greenplum
+             -c 指定连接数据库的方式，需要账户名、host、port、dbname
+	/usr/local/greenplum-db/madlib/bin/madpack install -s public -p greenplum -c gpadmin@mdw:5432/postgres
+
+

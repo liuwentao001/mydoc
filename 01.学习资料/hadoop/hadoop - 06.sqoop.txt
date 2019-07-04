@@ -1,0 +1,80 @@
+﻿解压
+	tar –zxvf sqoop-1.4.7.bin__hadoop-2.6.0.tar.gz -C /home/hadoop
+	ln -s /home/hadoop/sqoop-1.4.7.bin__hadoop-2.6.0/ /home/hadoop/sqoop
+
+修改配置/etc/profile
+	export SQOOP_HOME=/home/hadoop/sqoop
+	export PATH=$PATH:$SQOOP_HOME/bin
+	export CLASSPATH=.:$SQOOP_HOME/lib
+	执行：source /etc/profile
+
+注释sqoop1/bin/confiure-sqoop		HBase,Hive Zookeeper
+	#if [ -z "${HBASE_HOME}" ]; then
+	#  if [ -d "/usr/lib/hbase" ]; then
+	#    HBASE_HOME=/usr/lib/hbase
+	#  else
+	#    HBASE_HOME=${SQOOP_HOME}/../hbase
+	#  fi
+	#fi
+	#if [ -z "${HCAT_HOME}" ]; then
+	#  if [ -d "/usr/lib/hive-hcatalog" ]; then
+	#    HCAT_HOME=/usr/lib/hive-hcatalog
+	#  elif [ -d "/usr/lib/hcatalog" ]; then
+	#    HCAT_HOME=/usr/lib/hcatalog
+	#  else
+	#    HCAT_HOME=${SQOOP_HOME}/../hive-hcatalog
+	#    if [ ! -d ${HCAT_HOME} ]; then
+	#       HCAT_HOME=${SQOOP_HOME}/../hcatalog
+	#    fi
+	#  fi
+	#fi
+	#if [ -z "${ZOOKEEPER_HOME}" ]; then
+	#  if [ -d "/usr/lib/zookeeper" ]; then
+	#    ZOOKEEPER_HOME=/usr/lib/zookeeper
+	#  else
+	#    ZOOKEEPER_HOME=${SQOOP_HOME}/../zookeeper
+	#  fi
+	#fi
+	#if [ -z "${HIVE_HOME}" ]; then
+	#  if [ -d "/usr/lib/hive" ]; then
+	#    export HIVE_HOME=/usr/lib/hive
+	#  elif [ -d ${SQOOP_HOME}/../hive ]; then
+	#    export HIVE_HOME=${SQOOP_HOME}/../hive
+	#  fi
+	#fi
+	## Moved to be a runtime check in sqoop.
+	#if [ ! -d "${HBASE_HOME}" ]; then
+	#  echo "Warning: $HBASE_HOME does not exist! HBase imports will fail."
+	#  echo 'Please set $HBASE_HOME to the root of your HBase installation.'
+	#fi
+	#
+	## Moved to be a runtime check in sqoop.
+	#if [ ! -d "${HCAT_HOME}" ]; then
+	#  echo "Warning: $HCAT_HOME does not exist! HCatalog jobs will fail."
+	#  echo 'Please set $HCAT_HOME to the root of your HCatalog installation.'
+	#fi
+	#
+	#if [ ! -d "${ACCUMULO_HOME}" ]; then
+	#  echo "Warning: $ACCUMULO_HOME does not exist! Accumulo imports will fail."
+	#  echo 'Please set $ACCUMULO_HOME to the root of your Accumulo installation.'
+	#fi
+	#if [ ! -d "${ZOOKEEPER_HOME}" ]; then
+	#  echo "Warning: $ZOOKEEPER_HOME does not exist! Accumulo imports will fail."
+	#  echo 'Please set $ZOOKEEPER_HOME to the root of your Zookeeper installation.'
+	#fi
+
+修改 sqoop/conf/sqoop-env.sh配置文件：
+	export HADOOP_COMMON_HOME=/home/hadoop/hadoop
+	export HADOOP_MAPRED_HOME=/home/hadoop/hadoop
+	export HBASE_HOME=/home/hadoop/hbase
+	export ZOOCFGDIR=/home/hadoop/zookeeper/conf
+
+将驱动添加到sqoop/lib中
+	mysql-connector-java-5.1.44-bin.jar
+	commons-lang-2.6.jar
+
+测试
+	sqoop list-databases --connect jdbc:mysql://192.168.1.129:3306/ --username root --password 123
+	sqoop list-tables --connect jdbc:mysql://192.168.1.129:3306/mysql --username root --password 123
+
+	sqoop import --connect jdbc:mysql://192.168.1.129:3306/mysql --username root --password 123 --table user -m 1

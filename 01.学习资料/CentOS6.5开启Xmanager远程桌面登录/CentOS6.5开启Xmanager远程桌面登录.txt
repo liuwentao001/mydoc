@@ -1,0 +1,26 @@
+CentOS 6.5 开启Xmanager远程桌面登录
+
+1. 安装XDM
+	rpm -ivh libXpm-3.5.10-2.el6.x86_64.rpm
+	rpm -ivh libXaw-1.0.11-2.el6.x86_64.rpm
+	rpm -ivh xorg-x11-xdm-1.1.6-14.1.el6.x86_64.rpm
+2，修改/etc/X11/xdm/Xaccess文件，找到下面的语句：
+		# * #any  host  can  get  a  login  window，
+	去掉这一行最前面的#号，成为：
+		* #any  host  can  get  a  login  window
+3，修改/etc/gdm/custom.conf文件。
+	[security]
+	DisallowTCP=false
+	AllowRemoteRoot=true
+	[xdmcp]
+	Enable=true
+	Port=177
+4. kill进程中的gdm
+	ps -ef|grep gdm
+	kill -9 [gdm的进程号]
+	重启gdm:
+	/usr/sbin/gdm -restart
+5，在防火墙中开启 177端口；修改/etc/sysconfig/iptables文件，
+	在 -A INPUT -m state --state NEW -m tcp -p tcp --dport 22 -j ACCEPT这一行下面增加下面两行
+	-A INPUT -m state --state NEW -m tcp -p tcp --dport 6000:6010 -j ACCEPT
+	-A INPUT -m state --state NEW -m udp -p udp --dport 177 -j ACCEPT

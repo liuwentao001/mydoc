@@ -1,0 +1,279 @@
+﻿1.安装 Java
+	tar zxf jdk-7u71-linux-x64.gz
+	mv jdk1.7.0_71 /usr/local/
+
+	修改文件/etc/profile，添加
+		export JAVA_HOME=/usr/local/jdk1.7.0_71
+		export PATH=$PATH:$JAVA_HOME/bin
+	source /etc/profile
+2.安装 Hadoop
+	tar -zxvf hadoop-3.2.0.tar.gz -C /usr/local
+	rm -rf /usr/local/hadoop
+	ln -s /usr/local/hadoop-3.2.0/ /usr/local/hadoop
+
+	单击模式
+		运行MapReduce程序验证
+		准备mapreduce输入文件/opt/data/wc.input
+		hadoop mapreduce hive
+		hbase spark storm
+		sqoop hadoop hive
+		spark hadoop1
+		运行hadoop自带的mapreduce Demo
+		hadoop jar /usr/local/hadoop/share/hadoop/mapreduce/hadoop-mapreduce-examples-3.2.0.jar wordcount /opt/data/wc.input output
+	
+	伪分布式模式
+		修改文件hadoop-env.sh
+		export JAVA_HOME=/usr/local/jdk1.8.0_131
+
+		修改文件core-site.xml，localhost换成当前节点IP
+		<configuration>
+		    <property>
+			<name>fs.defaultFS</name>
+			<value>hdfs://localhost:9000</value>
+		    </property>
+		</configuration>
+
+		修改文件hdfs-site.xml
+		<configuration>
+		    <property>
+			<name>dfs.data.dir</name>
+			<value>/usr/local/hadoop/data</value>
+		    </property>
+		    <property>
+			<name>dfs.replication</name>
+			<value>1</value>
+		    </property>
+		</configuration>
+
+		修改文件mapred-site.xml，localhost换成namenode节点IP
+		<configuration>
+		    <property>
+			<name>mapred.job.tracker</name>
+			<value>localhost:9001</value>
+		    </property>
+		</configuration>
+
+		生成ssh密钥对
+		cd /root
+		ssh-keygen -t rsa
+		cd .ssh
+		cp id_rsa.pub  authorized_keys
+
+		格式化namenode
+		hdfs namenode -format
+
+		启动namenode：
+		./hadoop-daemon.sh start namenode
+
+		查看namenode是否启动成功：
+		jps
+		2862 NameNode
+		2943 Jps
+
+		启动成功，接下来启动datanode：
+		./hadoop-daemon.sh start datanode
+
+		查看datanode是否启动成功：
+		jps
+		2980 DataNode
+		2862 NameNode
+		3054 Jps
+
+		操作集群 
+		在文件系统中建立一个input文件夹：
+		hadoop fs -mkdir -p /user/data/input
+		hadoop fs -ls -R /
+		drwxr-xr-x   - root supergroup          0 2018-08-11 00:18 /user
+		drwxr-xr-x   - root supergroup          0 2018-08-11 00:19 /user/data
+		drwxr-xr-x   - root supergroup          0 2018-08-11 00:19 /user/data/input
+
+		将单机模式中的wc.input上传至文件系统中input目录：
+		hadoop fs -put /opt/data/wc.input /user/data/input/
+		hadoop fs -ls -R /
+		drwxr-xr-x   - root supergroup          0 2018-08-11 00:18 /user
+		drwxr-xr-x   - root supergroup          0 2018-08-11 00:19 /user/data
+		drwxr-xr-x   - root supergroup          0 2018-08-11 00:21 /user/data/input
+		-rw-r--r--   1 root supergroup      39654 2018-08-11 00:21 /user/data/input/wc.input
+
+		运行hadoop自带的mapreduce Demo
+		hadoop jar /usr/local/hadoop/share/hadoop/mapreduce/hadoop-mapreduce-examples-3.2.0.jar wordcount /opt/data/wc.input output
+
+	分布式模式
+		修改文件/ect/sysconfig/network（三个节点都要分别配置）
+		HOSTNAME=master
+		HOSTNAME=slave1
+		HOSTNAME=slave2
+
+		修改文件/etc/host（三个节点都要做如下配置）
+		192.168.100.132		master
+		192.168.100.133		slave1
+		192.168.100.134		slave2
+
+		创建hadoop群组和hadoop用户（三个节点都要做如下配置）
+		groupadd hadoop			--创建hadoop组
+		useradd hadoop -g hadoop	--为hadoop组中添加一个用户，用户名为hadoop
+		passwd hadoop			--为hadoop用户指定密码
+		
+		关闭防火墙（三个节点都要做如下配置）
+		service iptables stop
+		ntsysv		--上下键：可以在中间的方框当中，在各个服务之间移动；
+				--空格键：可以用来选择你所需要的服务，[*]表示开起启动；
+				--tab键：可以在方框、OK、Cancel之间移动；
+				--[F1]键：可以显示该服务的说明。
+
+		配置ssh免密码连入（三个节点都要做如下配置）
+		su hadoop
+		ssh-keygen -t rsa
+		ssh-copy-id master	--需要输入hadoop用户的密码
+		ssh-copy-id slave1
+		ssh-copy-id slave2
+		
+		解压Hadoop
+		tar -zxvf hadoop-3.2.0.tar.gz -C /home/hadoop
+		rm -rf /home/hadoop
+		ln -s /home/hadoop/hadoop-3.2.0/ /home/hadoop/hadoop
+
+		修改文件hadoop-env.sh
+		export JAVA_HOME=/usr/local/jdk1.8.0_131
+		export HADOOP_PREFIX=/home/hadoop/hadoop
+
+		修改文件core-site.xml
+		<configuration>
+		    <property>
+			<name>fs.defaultFS</name>
+			<value>hdfs://master:9000</value>
+		    </property>
+		    <property>
+			<name>hadoop.tmp.dir</name>
+			<value>/home/hadoop/hadoop/tmp</value>
+		    </property>
+		</configuration>
+
+		修改文件hdfs-site.xml   
+		<configuration>
+			<property>
+				<name>dfs.replication</name>
+				<value>1</value>
+			</property>
+			<property>
+				<name>dfs.namenode.name.dir</name>
+				<value>file:/home/hadoop/hadoop/name</value>
+			</property>
+			<property>
+				<name>dfs.datanode.data.dir</name>
+				<value>file:/home/hadoop/hadoop/data</value>
+			</property>
+			<property>
+				<name>dfs.permissions</name>  
+				<value>false</value>  
+			</property>
+		</configuration>
+
+		修改文件mapred-site.xml
+		<configuration>
+		  <property>
+		    <name>mapreduce.framework.name</name>
+		    <value>yarn</value>
+		  </property>
+		  <property>
+		    <name>yarn.app.mapreduce.am.env</name>
+		    <value>HADOOP_MAPRED_HOME=${HADOOP_HOME}</value>
+		  </property>
+		  <property>
+		    <name>mapreduce.map.env</name>
+		    <value>HADOOP_MAPRED_HOME=${HADOOP_HOME}</value>
+		  </property>
+		  <property>
+		    <name>mapreduce.reduce.env</name>
+		    <value>HADOOP_MAPRED_HOME=${HADOOP_HOME}</value>
+		  </property>
+		  <property>
+		    <name>mapreduce.jobhistory.address</name> 
+		    <value>master:10020</value> 
+		  </property>
+		  <property>
+		    <name>mapreduce.jobhistory.webapp.address</name> 
+		    <value>master:19888</value> 
+		  </property>
+		</configuration>
+
+		修改文件yarn-site.xml
+		<configuration>
+		  <property>
+		    <name>yarn.nodemanager.aux-services</name>
+		    <value>mapreduce_shuffle</value> 
+		  </property>
+		  <property>
+		    <name>yarn.nodemanager.aux-services.mapreduce.shuffle.class</name>
+		    <value>org.apache.hadoop.mapred.ShuffleHandler</value> 
+		  </property>
+		  <property>
+		    <name>yarn.resourcemanager.address</name> 
+		    <value>master:8032</value> 
+		  </property> 
+		  <property>
+		    <name>yarn.resourcemanager.scheduler.address</name>
+		    <value>master:8030</value>
+		  </property>
+		  <property>
+		    <name>yarn.resourcemanager.resource-tracker.address</name>
+		    <value>master:8031</value>
+		  </property>
+		  <property>
+		    <name>yarn.resourcemanager.admin.address</name>
+		    <value>master:8033</value>
+		  </property>
+		  <property>
+		    <name>yarn.resourcemanager.webapp.address</name> 
+		    <value>master:8088</value>
+		  </property>
+		</configuration>
+
+		修改文件workers，配置如下内容如下，这样我们可以用一键式命令启动整个hadoop集群:
+		slave1
+		slave2
+
+		scp -r ./hadoop-3.2.0 slave1:/home/hadoop
+		scp -r ./hadoop-3.2.0 slave2:/home/hadoop
+			当机器多的时候使用awk命令分发
+			cat /home/hadoop/hadoop-3.2.0/etc/hadoop/workers | awk '{print "scp -rp ./hadoop-3.2.0 "$1":/home/hadoop"}' > aaa
+
+		修改文件/etc/profile，添加
+			export JAVA_HOME=/usr/local/jdk1.8.0_131
+			export HADOOP_HOME=/home/hadoop/hadoop
+			export PATH=$PATH:$JAVA_HOME/bin:$HADOOP_HOME/bin:$HADOOP_HOME/sbin
+		source /etc/profile
+
+		格式化
+		hdfs namenode -format
+
+			解决问题WARN util.NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+			wget  http://ftp.gnu.org/gnu/glibc/glibc-2.17.tar.gz 
+			tar -zxvf glibc-2.17.tar.gz
+			cd glibc-2.17
+			mkdir build; cd build
+			../configure --prefix=/usr --disable-profile --enable-add-ons --with-headers=/usr/include --with-binutils=/usr/bin
+			make -j 8
+			make  install
+			strings /lib64/libc.so.6 | grep GLIBC
+
+		启动
+		sbin/start-all.sh
+		hadoop dfsadmin -report
+
+		操作集群 
+		在文件系统中建立一个input文件夹：
+		hadoop fs -mkdir -p /user/hadoop
+		hadoop fs -ls -R /
+		将wc.input上传至文件系统中input目录：
+			wc.input
+			hadoop mapreduce hive
+			hbase spark storm
+			sqoop hadoop hive
+			spark hadoop
+		hadoop fs -put /opt/data/wc.input /user/hadoop/
+		hadoop fs -ls -R /
+
+		运行hadoop自带的mapreduce Demo
+		hadoop jar /home/hadoop/hadoop/share/hadoop/mapreduce/hadoop-mapreduce-examples-3.2.0.jar wordcount /user/hadoop/wc.input output
+

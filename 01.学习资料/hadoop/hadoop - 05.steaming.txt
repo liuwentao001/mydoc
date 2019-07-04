@@ -1,0 +1,77 @@
+﻿先写一个map.py
+	import sys
+	for line in sys.stdin:
+		ss = line.strip().split(' ')
+		for word in ss:
+		print('\t'.join([word.strip(),"1"]))
+
+随便写一个测试文件 word.txt
+	张三 李四
+	黄二 小牛
+	张三 小牛
+	李四 黄一
+
+然后使用以下命令，体会一下map过程
+	cat word.txt | python map.py
+	输出
+	张三	1
+	李四	1
+	黄二	1
+	小牛	1
+	张三	1
+	小牛	1
+	李四	1
+	黄一	1
+
+接着我们写一个简单的red.py体验一下reduce过程
+	import sys 
+	cur_word = None
+	sum=0
+	for line in sys.stdin:
+	    word,cnt = line.strip().split('\t')
+	    if cur_word == None:
+		cur_word = word
+	    if cur_word!=word:
+		print('\t'.join([cur_word,str(sum)]))
+		cur_word = word
+		sum=0
+	    sum+=int(cnt)
+
+执行
+	cat word.txt | python map.py | sort -k 1 | python red.py
+	上述命令对map的结果进行了sort，这是模拟了mr的排序过程
+	输出
+	小牛	2
+	张三	2
+	李四	2
+	黄一	1
+
+那么怎么才能提交python编写的mr程序给hadoop呢,这就需要用到hadoop-streaming这个框架了
+	在这里为了以后使用方便，写成shell脚本
+	HADOOP_CMD="/Users/huangxiao/hadoop-2.7.3/bin/hadoop"#我的hadoop位置
+	STREAM_JAR_PATH="/Users/huangxiao/hadoop-2.7.3//share/hadoop/tools/lib/hadoop-streaming-2.7.3.jar"#streaming这个jar包的位置
+	INPUT_FILE_PATH_1="/word.txt"#测试文件在hdfs中的位置。所以需要先将文件传入hdfs中
+	OUTPUT_PATH="/output"#文件输出目录（运行mr前一定不能存在，mr自己会创建）
+	$HADOOP_CMD fs -rmr -skipTrash $OUTPUT_PATH#删除原有的输出文件夹
+	#step 1.下面代码就是使用streaming框架的命令，具体参数就不解释了
+	$HADOOP_CMD jar $STREAM_JAR_PATH \
+		-input $INPUT_FILE_PATH_1 \
+		-output $OUTPUT_PATH \
+		-mapper "python map.py" \
+		-reducer "python red.py" \
+		-file ./map.py \
+		-file ./red.py
+
+然后bash run.sh
+
+
+
+
+
+采用shell脚本语言中的一些命令作为mapper和reducer（cat作为mapper，wc作为reducer）
+$HADOOP_HOME/bin/hadoop  jar $HADOOP_HOME/hadoop-streaming.jar -input myInputDirs -output myOutputDir -mapper cat -reducer wc
+hadoop jar /home/hadoop/hadoop/share/hadoop/tools/lib/hadoop-streaming-3.2.0.jar -input /user/hadoop/input/test03.txt -output myOutputDir -mapper cat -reducer wc
+
+
+
+
