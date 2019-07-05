@@ -171,14 +171,82 @@ NETCAT
 		A:	ncat ncat -c bash --allow 192.168.100.142 -vnl 333 --ssl
 		B:	ncat -nv 1.1.1.1 333 --ssl
 WIRESHARK
-	ץ����̽Э�������ץ������Libpcap9����linux��winpcap10����Windows����������
-	
-	
-	
-	
-
-
-
-
-
-
+	抓包工具
+TCPDUMP
+	抓包，默认只抓前68个字节
+		tcpdump -i eth0 -s 0 -w file.pcap
+		tcpdump -i eth0 port 22
+	读取抓包文件
+		tcpdump -r file.pcap
+		tcpdump -A -r file.pcap	ASCII格式显示包内容
+		tcpdump -X -r file.pcap	二进制格式显示包内容
+	筛选
+		tcpdump -n -r http.cap |awk '{print $3}' | sort -u
+		tcpdump -n src host 1.1.1.1 -r http.cap
+		tcpdump -n dst host 1.1.1.1 -r http.cap
+		tcpdump -n port 53 -r http.cap
+		tcpdump -nX port 80 -r http.cap
+	高级筛选
+		tcpdump -A -n 'tcp[13]=24' -r http.cap
+过程文档记录工具
+	dradis
+	keepnote
+	truecrypt
+-----------------------------------------------------------------------------------------------------
+被动信息收集
+	信息收集内容
+		IP地址
+		域名信息
+		邮件地址
+		文档图片数据
+		公司地址
+		公司组织架构
+		联系电话、传真号码
+		人员姓名、职务
+		目标系统使用的技术架构
+		公开的商业信息
+	信息用途
+		用信息描述目标
+		发现
+		社会工程学攻击
+		屋里缺口
+信息收集
+	DNS信息收集——DNS
+		域名记录：A、C name、NS、MX、PTR
+	DNS信息收集——NSLOOKUP	
+		nslookup
+		www.baidu.com
+		set type=mx		type有a、mx、ns、any、ptr
+		baidu.com
+		set q=ptr		type简写为q，反向查询
+		180.76.13.18
+		server 8.8.8.8		设置域名服务器地址
+		nslookup -q=any baidu.com	可以写成一行
+	DNS信息收集——DIG
+		dig @8.8.8.8 www.sina.com mx
+		dig baidu.com any
+		dig +noall +answer baidu.com any		noall全都不显示，answer只看answer
+		dig -x 202.181.14.157					反向查询
+		dig +noall +answer txt chaos VERSION_BIND @ns3.dnsv4.com		查看bind版本
+		dig +trace baidu.com				DNS追踪
+	DNS区域传输
+		dig @ns1.example.com example.com axfr
+		host -T -l sina.com 8.8.8.8
+	DNS字典爆破
+		fierce -dnsserver 8.8.8.8 -dns sina.com.cn -wordlist /usr/share/fierce/hosts.txt					查询安装情况dpkg -L fierce
+		dnsdict6 -d4 -t 16 -x sina.com																并发16，x级别
+		dnsenum -f /usr/share/dnsenum/dns.txt -dnsserver 8.8.8.8 sina.com -o sina.xml
+		dnsmap sina.com -w /usr/share/dnsmap/wordlist_TLAs.txt 									速度慢
+		dnsrecon -d sina.com --lifetime 10 -t brt -D /usr/share/dnsrecon/namelist.txt
+		dnsrecon -t std -d sina.com																std标准方式
+	DNS注册信息
+		whois sina.com
+		whois -h whois.apnic.net 192.0.43.10
+			www.apnic.net
+			www.internic.net
+		
+		
+		
+		
+		
+		
