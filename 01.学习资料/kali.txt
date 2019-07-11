@@ -244,8 +244,25 @@ TCPDUMP
 		whois -h whois.apnic.net 192.0.43.10
 			www.apnic.net
 			www.internic.net
-		
-		
+	SHODAN
+		搜索联网设备
+		Banner：http、ftp、ssh、telnet
+		https://www.shodan.io
+		常见filter
+			net
+			city
+			country
+			port
+			os
+			hostname
+			server
+		示例
+			net 8.8.8.8
+			country:CN net:218.62.14.0/24 port:22
+			city:Harbin net:125.211.217.0/24 HTTP/1.1 403
+	google搜索
+		https://www.exploit-db.com/google-hacking-database		谷歌搜索关键字大全
+		https://www.yandex.com		俄罗斯搜索引擎
 		
 		
 		
