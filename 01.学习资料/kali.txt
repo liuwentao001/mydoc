@@ -263,7 +263,193 @@ TCPDUMP
 	google搜索
 		https://www.exploit-db.com/google-hacking-database		谷歌搜索关键字大全
 		https://www.yandex.com		俄罗斯搜索引擎
+	用户信息
+		theharvester -d sina.com -l 300 google
+		metagoofil -d microsoft.com -t pdf -l 200 -o test -f 1.html
+	MELTAGO
+	一个保存网站历史版本信息的网站	http://www.archive.org/
+	个人专属的密码字典
+		cupp——common user password profiler
+			git clone https://github.com/Mebus/cupp.git
+			python cup.py -i
+	查看图片信息
+		exif w.jpg
+		exiftool w.jpg
+		foca
+	recon-ng
+		workspaces list
+		keys list
+		shell ls
+		show options
+		set USER-AGENT 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.1 (KHTML, like Gecko) Chrome/14.0.835.163 Safari/535.1'
+		unset USER-AGENT
+		show schema		查看数据库表
+		snapshots list		查看数据库快照
+		snapshots take		创建数据库快照
+
+		search google
+		use recon/domains-hosts/google_site_web
+		show option
+		set SOURCE 163.com
+		run
+
+		search baidu
+		use recon/domains-hosts/baidu_site_web
+		show option
+		set SOURCE 163.com
+		run
+
+		show hosts			查看host表
+		query select * from hosts	查看host表
+
+		search brut			暴力破解
+		use recon/domains-hosts/brute_hosts
+		show option
+		set SOURCE 163.com
+		run
+
+		search resolve			解析IP
+		use recon/hosts-hosts/resolve
+		show option
+		show info
+		set SOURCE query select host from hosts
+		run
+
+		search report
+		use reporting/html
+		show option
+		set CREATOR aaa
+		set CUSTOMER 163
+		run
+-----------------------------------------------------------------------------------------------------
+主动信息收集
+	二层发现——速度快、可靠、不可路由、arp协议
+		arping
+			arping 192.168.1.1 -c 1
+
+			arp1.sh：	
+			#!/bin/bash
+			if ["$#" -ne 1]
+			then
+				echo "Usage : ./arping1.sh [Interface]"
+				exit
+			fi
+			interface=$1
+			prefix=$(ifconfig $interface | grep 'inet '| cut -d 't' -f 2 | cut -d ' ' -f 2 | cut -d '.' -f 1-3)
+			for addr in $(seq 1 254)
+			do
+				arping -c 1 $prefix.$addr | grep "bytes from" | cut -d " " -f 5 | cut -d "(" -f 2 | cut -d ")" -f 1
+			done
+
+			apr2.sh：
+			#!/bin/bash
+			if ["$#" -ne 1]
+			then
+				echo "Usage : ./arping2.sh [filename]"
+				exit
+			fi
+			file=$1
+			for addr in $(cat $file)
+			do
+				arping -c 1 $addr | grep "bytes from" | cut -d " " -f 5 | cut -d "(" -f 2 | cut -d ")" -f 1
+			done
+
+			arp1.py
+			#!/usr/bin/python
+			import logging
+			import subprocess
+			logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
+			from scapy.all import*
+			if len(sys.argv)!=2:
+				print"Usage : ./arp1.py [interface]"
+				sys.exit()
+			interface=str(sys.argv[1])
+			ip=subprocess.check_output("ifconfig "+interface+" | grep 'inet '| cut -d 't' -f 2 | cut -d ' ' -f 2 | cut -d '.' -f 1-3",shell=True).strip()
+			prefix=ip.split('.')[0]+'.'+ip.split('.')[1]+'.'+ip.split('.')[2]+'.'
+			for addr in range(0,254):
+				answer=sr1(ARP(pdst=prefix+str(addr)),timeout=0.1,verbose=0)
+				if answer==None:
+					pass
+				else:
+					print prefix+str(addr)
+			
+			arp2.py
+				import logging
+				logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
+				from scapy.all import*
+				if len(sys.argv)!=2:
+					print"Usage : ./arp2.py [filename]"
+					sys.exit()
+				filename=str(sys.argv[1])
+				file=open(filename,'r')
+				for addr in file:
+					answer=sr1(ARP(pdst=addr.strip()),timeout=0.1,verbose=0)
+					if answer==None:
+						pass
+					else:
+						print addr.strip()
+
+		nmap
+			nmap -sn 192.168.1.129
+			nmap -sn 192.168.1.0/24
+			nmap -iL iplist.txt -sn
 		
+		netdiscover
+			主动
+			netdiscover -i eth0 -r 192.168.1.0/24
+			netdiscover -i iplist.txt
+			被动
+			netdiscover -p
+
+		scapy
+			apt-get install python-gnuplot
+			ARP().display()
+			arp=ARP()
+			arp.pdst='192.168.1.1'		设置信息
+			arp.display()				查看信息
+			sr1(arp)					发包
+			answer=sr1(arp)
+			answer.display()
+			
+			sr1(ARP(pdst='192.168.1.1'),timeout=1,verbose=1)
+			
+	三层发现——速度快、可路由、经常被边界防火墙过滤、ip,icmp协议
+		ping 192.168.1.129 -c 2
+		traceroute www.163.com
+		scapy
+			i=IP()
+			p=ICMP()
+			ping=(i/p)
+			ping.display()
+			ping[IP].dst='192.168.1.1'
+			ping.display()
+			answer=sr1(ping)
+			answer.display()
+			
+			sr1(IP(dst='192.168.1.1')/ICMP(),timeout=1,verbose=1)
 		
-		
-		
+		nmap
+			nmap -sn 202.97.224.0/24
+
+		fping 
+			fping 192.168.1.1
+			fping -g 192.168.1.100 192.168.1.200
+
+		hping
+			hping3 192.168.1.1 --icmp -c 2
+			for addr in $(seq 1 254):do hping3 192.168.1.$addr --icmp -c 1 >> handle.txt & done
+
+	四层发现——结果可靠，不可能被防火墙过滤，全端口扫描速度慢、TCP/UDP
+
+
+
+
+
+
+
+
+
+
+
+
+
