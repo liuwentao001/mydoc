@@ -440,11 +440,99 @@ TCPDUMP
 			for addr in $(seq 1 254):do hping3 192.168.1.$addr --icmp -c 1 >> handle.txt & done
 
 	四层发现——结果可靠，不可能被防火墙过滤，全端口扫描速度慢、TCP/UDP
+		tcp——未经请求的ACK，返回RST；正常的情况SYN-SYN/ACK,RST
+		ACK——TCP Port——RST
+		scapy
+			i=IP()
+			i.dst='192.168.1.129'
+			t=TCP()
+			t.flags='A'
+			r=(i/t)
+			a=sr1(r)
+			a.display()
+			
+			a=sr1(IP(dst='192.168.1.129')/TCP(dport=80,flags='A'),timeout=1)
+		udp——ICMP端口不可达、一去不复返
+		UDP——UDP Port——ICMP
+		scapy
+			i=IP()
+			i.dst='192.168.1.129'
+			u=UDP()
+			u.dport=80
+			r=(i/u)
+			a=sr1(r,timeout=1,verbose=1)
+			a.display()
+			
+			a=sr1(IP(dst='192.168.1.129')/UDP(dport=80),timeout=1)
+		nmap
+			nmap 192.168.1.1-254 -PU53 -sn		udp方式
+			nmap 192.168.1.1-254 -PA80 -sn		tcp方式
+			nmap -iL iplist.txt -PA80 -sn
+		hping3
+			hping3 192.168.1.1 --udp -c 2
+	端口扫描
+		UPD端口扫描
+		scapy
+			sr1(IP(dst='192.168.1.129')/UDP(dport=53),timeout=1,verbose=1)
+		nmap
+			nmap -sU 192.168.1.129
+			nmap -sU 192.168.1.129 -p80
+			
+		TCP端口扫描——基于连接协议、三次握手、隐蔽扫描、僵尸扫描、全连接扫描
+			隐蔽扫描——syn - syn/ack - rst
+			scapy
+				sr1(IP(dst='192.168.1.129')/TCP(dport=80),timeout=1,verbose=1)
+			nmap
+				nmap 192.168.1.129 -sS
+				nmap 192.168.1.129 -sS -p 80,21,443
+			hping3
+				hping3 192.168.1.129 --scan 1-100 -S
+				hping3 -c 10 -S --spoof 192.168.1.1 -p ++1 192.168.1.129	发10个包伪造地址192.168.1.1，需要到伪造地址机器查看结果
+				
+			全连接扫描——不隐蔽
+			scapy
+				sr1(IP(dst='192.168.1.129')/TCP(dport=80,flags='S'),timeout=1,verbose=1)
+			
+			tcp_scan1.py
+				#!/usr/bin/python
+				import logging
+				logging.getlogger("scapy.runtime").setLevel(logging.ERROR)
+				from scapy.all import *
+				response=sr1(IP(dst="1.1.1.1")/TCP(dport=80,flags='S'))
+				reply=sr1(IP(dst="1.1.1.1")/TCP(dport=80,flags='A',ack=(response[TCP].seq+1)))
+			
+			tcp_scan2.py
+				#!/usr/bin/python
+				import logging
+				logging.getlogger("scapy.runtime").setLevel(logging.ERROR)
+				from scapy.all import*
+				SYN=IP(dst="1.1.1.1")/TCP(dport=444,flags='S')
+				print "--   SENT  --"
+				SYN.display()
+				print "\n\n--  RECEIVED  --"
+				response=sr1(SYN.timeout=1,verbose=0)
+				response.display()
+				if int(response(TCP).flags)==18;
+				print "\n\n--  SENT  --"
+				A=IP(dst="1.1.1.1")/TCP(dport=444,flags='A',ack=(response[TCP].seq+1))
+				A.display()
+				print "\n\n-- RECEIVED  --"
+				response2=sr1(A.timeout=1,verbose=0)
+				response2.display()
+				else
+				print "SYN.ACK not returned"
 
-
-
-
-
+			 iptables -A OUTPUT -p tcp --tcp-flags RST RST -d 10.5.1.134 -j DROP
+			
+			nmap
+				nmap -sT 192.168.1.129 -p 80
+				
+			dmitry
+				dmitry -p 192.168.1.129
+			
+			nc
+				nc -nv -w 1 -z 192.168.1.129 1-1000
+	
 
 
 
