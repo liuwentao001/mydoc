@@ -521,21 +521,123 @@ TCPDUMP
 				response2.display()
 				else
 				print "SYN.ACK not returned"
-
 			 iptables -A OUTPUT -p tcp --tcp-flags RST RST -d 10.5.1.134 -j DROP
-			
 			nmap
 				nmap -sT 192.168.1.129 -p 80
-				
 			dmitry
 				dmitry -p 192.168.1.129
-			
 			nc
 				nc -nv -w 1 -z 192.168.1.129 1-1000
-	
+	服务扫描
+		识别开放端口上运行的应用
+		识别目标操作系统
+		提高攻击效率
+			banner捕获
+			服务识别
+			操作系统识别
+			snmp分析
+			防火墙识别
+		banner
+			软件开发商
+			软件名称
+			服务类型
+			版本号	直接发现已知的漏洞和弱点
+		建立连接后直接获取banner
+		另类服务识别方法
+			特征行为和响应字段
+			不同的响应可用于识别底层操作系统
+		snmp
+			简单网络管理协议
+			community strings
+			信息查询或重新配置
+		识别和绕过防火墙筛选
+		服务扫描——banner
+			nc -nv 192.168.1.129 25
+		
+			python 
+			import socket
+			banner=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+			banner.connect(("192.168.1.107",21))
+			banner.recv(4096)
+			banner.close()
+			exit()
+		
+			很多系统不允许抓取banner信息，recv函数会被挂起，需做特殊处理
+			import socket
+			import select
+			import sys
+			if len( sys.argv ) !=4:
+			   print "Usage - ./banner_grab.py [Target.IP] [First Port] [Last Port]"
+			   print "Example - ./banner_grab.py 1.1.1.1 1 100"
+			   print "Example will grab banners for TCP ports 1 through 100 on 1.1.1.1"
+			   sys.exit()
+			ip = sys.argv[1]
+			start = int(sys.argv[2])
+			end = int(sys.argv[3])
+			for port in range(start,end):
+			   try:
+			     bangrab=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+			     bangrab.connect((ip,port))
+			     ready=select.select([bangrab],[],[],1)                   #连接间隔时间1秒
+			     if ready[0]:
+			       print "TCP Port " + str(port) + "." +bangrab.recv(4096)
+			       bangrab.close()
+			   except:
+			     pass
 
-
-
+			dmitry -pb 192.168.1.129
+			nmap  -sT 192.168.1.129 -p 22 --script=banner
+			amap -B 192.168.1.129 1-65535
+		nmap 192.168.1.129 -p1-10000 -sV
+		amap 192.168.1.129 1-10000 -qb
+	操作系统识别
+		ttl起始值
+			windows	128	(65-128)
+			linux		64	(1-64)
+			某些unix		255
+			
+			from scapy.all import *
+			import logging
+			logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
+			import sys
+			if len(sys.argv)!=2:
+			    print "error,tip:./osttl.py 1.1.1.1"
+			    sys.exit()
+			ip = sys.argv[1]
+			answer = sr1(IP(dst=str(ip))/ICMP(),timeout=1,verbose=0)
+			if answer == None:
+			    print "No response"
+			elif int(answer[IP].ttl)<=64:
+			    print "Host is Linux/Unix"
+			else:
+			    print "Host is Windows"
+		nmap
+			nmap 192.168.1.129 -O
+		xprobe2 
+			xprobe2 192.168.1.129
+		被动操作系统识别	IDS、抓包分析
+		被动扫描
+		p0f		结合arp地址欺骗识别全网OS
+	snmp扫描	public/private/manager
+		onesixtyone 192.168.1.129 public
+		dpkg -L onesixtyone
+		onesixtyone -c /usr/share/doc/onesixtyone/dict.txt 192.168.1.129 -o my.log -w 100
+		snmpwalk 192.168.1.129 -c public -v 2c
+		snmpcheck -t 192.168.1.129
+		snmpcheck -t 192.168.1.129 -w
+	smb扫描
+		nmap -v -p 139,445 192.168.1.1-200
+		nmap 192.168.1.129 -p 139,445 --script=smb-os-discovery.nse
+		nmap -v -p 139,445 --script=smb-check-vunlns --script-args=unsafe=192.168.1.129
+		nbtscan -r 192.168.1.0/24
+		enum4linux -a 192.168.1.129
+		
+		
+		
+		
+		
+		
+		
 
 
 
