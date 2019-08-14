@@ -98,6 +98,7 @@ apt-get update
 apt-get upgrade
 apt-get dist-upgrade
 apt-get install ibus ibus-pinyin flashplugin-nonfree gdebi geany meld netspeed mtr chromium 
+sudo apt-get install gparted		--分区工具
 
 --模拟环境配置-----------------------------------------------------------------------------------------------------
 --暗网wiki
@@ -648,10 +649,36 @@ TCPDUMP
 漏洞扫描	
 	https://www.exploit-db.com/
 	searchsploit tomcat
+	
+	nmap -p445 --script=smb-enum-shares.nse 192.168.1.129
+	nmap -p445 --script=smb-enum-shares.nse --script-args=smbuser=adminm,smbpassword=pass 192.168.1.129
+	
+	openvas
+		apt-get update
+		apt-get install openvas
+		openvas-setup										安装
+		openvas-check-setup									检查安装结果
+			openvas-check-setup | grep FIX
+		openvasmd --get-users								查看当前帐号
+		openvasmd --user=admin --new-password=admin		修改帐号密码
+		openvas-feed-update									升级
+		netstat -pantu | grep 939								查看端口
+		https://127.0.0.1:9392
+		vi /usr/bin/openvas-start
+			starting openvas services
+			starting openvas manager.openwasmd
+			starting openvas scanner.openwasmd
+			starting greenbone securify assiatant:gsad
+			
+			/etc/init.d/openvas-manager start
+			/etc/init.d/openvas-scanner start
+			/etc/init.d/greenbone-security-assistant start
+	nessus
+		/etc/init.d/nessusd start 
+		https://127.0.0.1:8834/#/
+		48CC-C268-5CEE-B380-B193
+		admin/admin
 		
-		
-
-
 
 
 
