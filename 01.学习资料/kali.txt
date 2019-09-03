@@ -648,6 +648,7 @@ TCPDUMP
 	nmap
 漏洞扫描	
 	https://www.exploit-db.com/
+	https://www.securityfocus.com/
 	searchsploit tomcat
 	
 	nmap -p445 --script=smb-enum-shares.nse 192.168.1.129
@@ -678,6 +679,39 @@ TCPDUMP
 		https://127.0.0.1:8834/#/
 		48CC-C268-5CEE-B380-B193
 		admin/admin
+	
+	nexpose
+缓冲区溢出
+	示例
+		a.sh
+			#!/bin/bash
+			echo $1
+		./a.sh ;pwd
+	如何发现漏洞
+		源码审计
+		逆向工程
+		模糊测试
+			向程序堆栈半随机的数据，根据内存变化判断溢出
+			数据生成器：生成随机、半随机数据
+			测试工具：识别溢出漏洞
+	window缓冲区溢出
+		FUZZER
+		SLMail 5.5.0 mail server				--存在缓冲区漏洞的软件
+		immunitydebugger_1_85_setup.exe		--调试工具
+		mona.py							--
+	linux缓冲区溢出
+		crossfire1.9.0		--存在缓冲区漏洞的软件
+		edb				--调试工具
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
 		
 
 
