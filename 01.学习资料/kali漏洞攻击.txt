@@ -45,3 +45,23 @@ ms03_026
 ms06_040
 
 	chcp 65001					--解决乱码问题
+
+
+
+
+cp rdp.rb /usr/share/metasploit-framework/lib/msf/core
+cp rdp_scanner.rb /usr/share/metasploit-framework/modules/auxiliary/scanner/rdp
+cp cve_2019_0708_bluekeep_rce.rb /usr/share/metasploit-framework/modules/exploits/windows/rdp
+cp cve_2019_0708_bluekeep.rb /usr/share/metasploit-framework/modules/auxiliary/scanner/rdp
+
+
+mkdir -p /usr/share/metasploit-framework/modules/exploit/windows/rdp/
+mkdir  -p /usr/share/metasploit-framework/modules/auxiliary/scanner/rdp/
+mkdir  -p /usr/share/metasploit-framework/modules/exploits/windows/rdp/
+cp rdp.rb   /usr/share/metasploit-framework/modules/exploit/windows/rdp/rdp.rb
+cp rdp_scanner.rb   /usr/share/metasploit-framework/modules/auxiliary/scanner/rdp/rdp_scanner.rb
+cp cve_2019_0708_bluekeep.rb  /usr/share/metasploit-framework/modules/auxiliary/scanner/rdp/cve_2019_0708_bluekeep.rb
+cp cve_2019_0708_bluekeep_rce.rb   /usr/share/metasploit-framework/modules/exploits/windows/rdp/cve_2019_0708_bluekeep_rce.rb
+
+
+use exploit/windows/rdp/cve_2019_0708_bluekeep_rce
